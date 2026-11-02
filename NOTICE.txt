@@ -24,6 +24,15 @@ Modified on 2026-11-02:
 - Removed obsolete background HTML, original signature metadata and unused build,
   font and promotional files.
 
+Additional changes in 2.1.0 (2026-11-02):
+- xpath.js: new validated smart/absolute XPath generation, quoted literals and SVG support.
+- content.js/content.css: generator integration, typed results, origin context and panel size.
+- bar.html/bar.js/bar.css: query/copy controls, Chinese interface and local history/favorites.
+- background.js/library.js: validated per-site local storage and serialized library operations.
+- manifest.json: version 2.1.0, storage permission and generator script declaration.
+- Documentation and tests: feature, data-handling and update instructions; protocol,
+  storage, panel, literal and browser regression checks.
+
 The new documentation, tests and geometric artwork are also provided under Apache-2.0.
 This is an independently maintained, unofficial adaptation. It is not an official
 release by Google, the original author or the Chrome Web Store, and no endorsement

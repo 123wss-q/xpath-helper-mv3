@@ -1,18 +1,70 @@
 <!DOCTYPE html>
-<html>
+<!-- Modified 2026-11-02: v2.1 query tools, match status and per-site local library. -->
+<html lang="zh-CN">
   <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>XPath Helper (MV3)</title>
     <link rel="stylesheet" type="text/css" href="bar.css">
   </head>
   <body>
-    <div id="query-box">
-      <div class="box-name">Query</div>
-      <textarea id="query"></textarea>
-    </div>
-    <div id="results-box">
-      <div class="box-name">Results (<span id="node-count"></span>)</div>
-      <textarea id="results" readonly="readonly"></textarea>
-    </div>
+    <header class="toolbar">
+      <div id="panel-title" title="按住 Shift 并将鼠标移动到此标题，可切换面板位置">XPath Helper <span>2.1</span></div>
+      <label class="mode-label" for="mode">生成方式</label>
+      <select id="mode" title="生成方式仅影响鼠标选取元素">
+        <option value="smart">智能相对 XPath</option>
+        <option value="absolute">绝对 XPath</option>
+      </select>
+      <span class="toolbar-spacer"></span>
+      <button id="toggle-library" type="button" aria-expanded="false" aria-controls="library-panel">历史与收藏</button>
+      <button id="close-panel" class="icon-button" type="button" title="关闭面板（Ctrl / Command + Shift + X）" aria-label="关闭面板">×</button>
+    </header>
+
+    <main id="workspace">
+      <section id="query-box" class="editor-pane" aria-label="XPath 查询">
+        <div class="pane-heading">
+          <label class="box-name" for="query">XPath</label>
+          <span id="match-status" role="status" aria-live="polite">等待选择元素或输入 XPath</span>
+        </div>
+        <textarea id="query" maxlength="4096" spellcheck="false" placeholder="按住 Shift 指向元素，或输入 XPath…" aria-label="XPath 表达式"></textarea>
+        <div class="query-actions">
+          <button id="run-query" class="primary" type="button" title="运行并记入当前网站历史（Ctrl / Command + Enter）">运行</button>
+          <button id="copy-query" type="button" disabled>复制 XPath</button>
+          <input id="favorite-name" type="text" maxlength="80" placeholder="收藏名称（可选）" aria-label="收藏名称">
+          <button id="save-favorite" type="button" disabled>收藏</button>
+        </div>
+      </section>
+
+      <section id="results-box" class="editor-pane" aria-label="查询结果">
+        <div class="pane-heading">
+          <label class="box-name" for="results">结果 <span class="count-badge" id="node-count">0</span></label>
+          <button id="copy-results" class="compact" type="button" disabled>复制结果</button>
+        </div>
+        <textarea id="results" readonly spellcheck="false" placeholder="匹配的文字或属性值将显示在这里" aria-label="XPath 查询结果"></textarea>
+      </section>
+
+      <section id="library-panel" hidden aria-label="当前网站的历史与收藏">
+        <div class="library-heading">
+          <span id="site-label">正在识别当前网站…</span>
+          <span id="library-state" role="status" aria-live="polite"></span>
+        </div>
+        <div class="library-columns">
+          <section class="library-column" aria-label="历史记录">
+            <div class="list-heading"><span>历史 <span class="muted">最近 30 条</span></span><button id="clear-history" type="button" class="compact" disabled>清空</button></div>
+            <div id="history-list" class="entry-list"><p class="empty-state">正在等待网页响应…</p></div>
+          </section>
+          <section class="library-column" aria-label="收藏">
+            <div class="list-heading"><span>收藏 <span class="muted">最多 50 条</span></span><button id="clear-favorites" type="button" class="compact" disabled>清空</button></div>
+            <div id="favorites-list" class="entry-list"><p class="empty-state">正在等待网页响应…</p></div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span id="notice" role="status" aria-live="polite">按住 Shift 选择元素；运行或复制 XPath 会记入历史。</span>
+      <span class="privacy-note">按网站保存在本机 · 不保存网页结果</span>
+    </footer>
     <script type="text/javascript" src="bar.js"></script>
   </body>
 </html>

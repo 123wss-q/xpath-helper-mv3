@@ -1,4 +1,4 @@
-XPath Helper (MV3) 2.0.3 — 基于 XPath Helper 2.0.2 的非官方适配版
+XPath Helper (MV3) 2.1.0 — 基于 XPath Helper 2.0.2 的非官方适配版
 
 1. 将下载的 ZIP 解压到准备长期保留的位置。
 2. 在 Chrome 打开 chrome://extensions，开启“开发者模式”。
@@ -7,12 +7,22 @@ XPath Helper (MV3) 2.0.3 — 基于 XPath Helper 2.0.2 的非官方适配版
 5. 按住 Shift，将鼠标移动到网页元素上生成 XPath；也可在 Query 直接输入。
 
 macOS 对应快捷键为 Command+Shift+X。
-安装后保留目录。更新后重新加载扩展并刷新网页。
+安装后保留目录。更新时覆盖原加载目录的文件，再重新加载扩展并刷新网页。
+不要通过卸载来更新，否则会清除本地历史与收藏。
 Chrome 内置页面和商店等受保护页面无法使用。
 本发布提供 ZIP 供解压加载；自行打包的 CRX 可能被 Chrome 来源验证禁用。
 
-已通过 JavaScript 语法、声明资源及 9 项模拟消息路由与初始化检查。
-已有用户反馈在 Chrome 中成功安装使用；尚未完成全面浏览器兼容性回归。
+新功能
+- 智能相对 XPath / 绝对 XPath 切换；处理属性引号和 SVG 定位。
+- 复制 XPath、复制结果；显示唯一匹配、多项、未匹配或错误。
+- 运行（Ctrl/Command+Enter）或成功复制 XPath 时记入历史。
+- 输入名称后收藏，通过“历史与收藏”恢复、删除或清空当前网站的记录。
+- 按住 Shift 并移动到面板标题，可以上下移动面板。
+
+记录使用新增的 storage 权限保存在本机，不云同步、不保存匹配结果。
+每站点历史30条、收藏50条；表达式本身可能包含页面文字，请按需清理。
+所有本地文件共用一个分类；隐身窗口不读取或保存历史与收藏。
+自动化检查范围及已知限制见 README.md；macOS 尚未做实机验证。
 
 采用 Apache-2.0。保留原作品 Copyright 2011 Google Inc. All Rights Reserved.
 本版非原作者或 Google 官方发布。完整来源、限制和数据说明请阅读 README.md。

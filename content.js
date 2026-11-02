@@ -21,152 +21,71 @@
 
 'use strict';
 
-// Modified 2026-11-02: synchronize the panel after its listener is ready.
-
-// Extension namespace.
+// Modified 2026-11-02: MV3 panel handshake, smart/absolute XPath generation,
+// result-type feedback, and site context for the local history/favorites library.
 var xh = xh || {};
-
-////////////////////////////////////////////////////////////
-// Generic helper functions and constants
-
 xh.SHIFT_KEYCODE = 16;
 xh.X_KEYCODE = 88;
 
-xh.elementsShareFamily = function(primaryEl, siblingEl) {
-  var p = primaryEl, s = siblingEl;
-  return (p.tagName === s.tagName &&
-          (!p.className || p.className === s.className) &&
-          (!p.id || p.id === s.id));
+xh.site = function() {
+  return location.protocol === 'file:' ? 'file://' : location.origin;
 };
 
-xh.getElementIndex = function(el) {
-  var index = 1;  // XPath is one-indexed
-  var sib;
-  for (sib = el.previousSibling; sib; sib = sib.previousSibling) {
-    if (sib.nodeType === Node.ELEMENT_NODE && xh.elementsShareFamily(el, sib)) {
-      index++;
-    }
-  }
-  if (index > 1) {
-    return index;
-  }
-  for (sib = el.nextSibling; sib; sib = sib.nextSibling) {
-    if (sib.nodeType === Node.ELEMENT_NODE && xh.elementsShareFamily(el, sib)) {
-      return 1;
-    }
-  }
-  return 0;
-};
-
-xh.makeQueryForElement = function(el) {
-  var query = '';
-  for (; el && el.nodeType === Node.ELEMENT_NODE; el = el.parentNode) {
-    var component = el.tagName.toLowerCase();
-    var index = xh.getElementIndex(el);
-    if (el.id) {
-      component += '[@id=\'' + el.id + '\']';
-    } else if (el.className) {
-      component += '[@class=\'' + el.className + '\']';
-    }
-    if (index >= 1) {
-      component += '[' + index + ']';
-    }
-    // If the last tag is an img, the user probably wants img/@src.
-    if (query === '' && el.tagName.toLowerCase() === 'img') {
-      component += '/@src';
-    }
-    query = '/' + component + query;
-  }
-  return query;
-};
-
-xh.highlight = function(els) {
-  for (var i = 0, l = els.length; i < l; i++) {
-    els[i].classList.add('xh-highlight');
-  }
+xh.makeQueryForElement = function(el, mode) {
+  return xhXPath.generate(el, mode || 'smart');
 };
 
 xh.clearHighlights = function() {
-  var els = document.querySelectorAll('.xh-highlight');
-  for (var i = 0, l = els.length; i < l; i++) {
-    els[i].classList.remove('xh-highlight');
-  }
+  document.querySelectorAll('.xh-highlight').forEach(function(el) {
+    el.classList.remove('xh-highlight');
+  });
 };
 
-// Returns [values, nodeCount]. Highlights result nodes, if applicable. Assumes
-// no nodes are currently highlighted.
 xh.evaluateQuery = function(query) {
-  var xpathResult = null;
-  var str = '';
-  var nodeCount = 0;
-  var toHighlight = [];
-
+  if (!query.trim()) return {results: ['', 0], meta: {kind: 'empty'}};
+  var values = [], count = 0, highlights = [], kind = 'nodes';
   try {
-    xpathResult = document.evaluate(query, document, null,
-                                    XPathResult.ANY_TYPE, null);
-  } catch (e) {
-    str = '[INVALID XPATH EXPRESSION]';
-    nodeCount = 0;
-  }
-
-  if (!xpathResult) {
-    return [str, nodeCount];
-  }
-
-  if (xpathResult.resultType === XPathResult.BOOLEAN_TYPE) {
-    str = xpathResult.booleanValue ? '1' : '0';
-    nodeCount = 1;
-  } else if (xpathResult.resultType === XPathResult.NUMBER_TYPE) {
-    str = xpathResult.numberValue.toString();
-    nodeCount = 1;
-  } else if (xpathResult.resultType === XPathResult.STRING_TYPE) {
-    str = xpathResult.stringValue;
-    nodeCount = 1;
-  } else if (xpathResult.resultType ===
-             XPathResult.UNORDERED_NODE_ITERATOR_TYPE) {
-    for (var node = xpathResult.iterateNext(); node;
-         node = xpathResult.iterateNext()) {
-      if (node.nodeType === Node.ELEMENT_NODE) {
-        toHighlight.push(node);
+    var result = document.evaluate(query, document, null, XPathResult.ANY_TYPE, null);
+    if (result.resultType === XPathResult.BOOLEAN_TYPE) {
+      kind = 'boolean'; values.push(result.booleanValue ? '1' : '0'); count = 1;
+    } else if (result.resultType === XPathResult.NUMBER_TYPE) {
+      kind = 'number'; values.push(String(result.numberValue)); count = 1;
+    } else if (result.resultType === XPathResult.STRING_TYPE) {
+      kind = 'string'; values.push(result.stringValue); count = 1;
+    } else {
+      for (var node = result.iterateNext(); node; node = result.iterateNext()) {
+        count++;
+        values.push(node.textContent || '');
+        if (node.nodeType === Node.ELEMENT_NODE && node.id !== 'xh-bar') {
+          highlights.push(node);
+        } else if (node.nodeType === Node.ATTRIBUTE_NODE && node.ownerElement) {
+          highlights.push(node.ownerElement);
+        }
       }
-      if (str) {
-        str += '\n';
-      }
-      str += node.textContent;
-      nodeCount++;
     }
-    if (nodeCount === 0) {
-      str = '[NULL]';
-    }
-  } else {
-    // Since we pass XPathResult.ANY_TYPE to document.evaluate(), we should
-    // never get back a result type not handled above.
-    str = '[INTERNAL ERROR]';
-    nodeCount = 0;
+    // Apply DOM mutations only after the XPath iterator is exhausted.
+    highlights.forEach(function(el) { el.classList.add('xh-highlight'); });
+    return {results: [count ? values.join('\n') : '[NULL]', count], meta: {kind: kind}};
+  } catch (error) {
+    return {results: ['[INVALID XPATH EXPRESSION]', 0],
+      meta: {kind: 'error', error: String(error.message || 'XPath 无效').slice(0, 240)}};
   }
-
-  xh.highlight(toHighlight);
-  return [str, nodeCount];
 };
-
-////////////////////////////////////////////////////////////
-// xh.Bar class definition
 
 xh.Bar = function() {
   this.boundHandleRequest_ = this.handleRequest_.bind(this);
   this.boundMouseMove_ = this.mouseMove_.bind(this);
   this.boundKeyDown_ = this.keyDown_.bind(this);
-
   this.inDOM_ = false;
   this.currEl_ = null;
   this.query_ = '';
-
+  this.mode_ = 'smart';
+  this.generationError_ = '';
   this.barFrame_ = document.createElement('iframe');
   this.barFrame_.src = chrome.runtime.getURL('bar.html');
   this.barFrame_.id = 'xh-bar';
-  // Init to hidden so first showBar_() triggers fade-in.
+  this.barFrame_.title = 'XPath Helper';
   this.barFrame_.classList.add('hidden');
-
   document.addEventListener('keydown', this.boundKeyDown_);
   chrome.runtime.onMessage.addListener(this.boundHandleRequest_);
 };
@@ -177,60 +96,71 @@ xh.Bar.prototype.hidden_ = function() {
 
 xh.Bar.prototype.updateQueryAndBar_ = function(el) {
   xh.clearHighlights();
-  this.query_ = el ? xh.makeQueryForElement(el) : '';
+  this.generationError_ = '';
+  try {
+    this.query_ = el ? xh.makeQueryForElement(el, this.mode_) : '';
+  } catch (error) {
+    this.query_ = '';
+    this.generationError_ = String(error.message || '无法为这个元素生成 XPath');
+  }
   this.updateBar_(true);
 };
 
 xh.Bar.prototype.updateBar_ = function(updateQuery) {
-  var results = this.query_ ? xh.evaluateQuery(this.query_) : ['', 0];
-  chrome.runtime.sendMessage({
-    type: 'update',
+  // Also clear before a ready refresh: extension-added classes must never alter
+  // attribute/class XPath matching or stale highlights.
+  xh.clearHighlights();
+  var output = this.generationError_ ? {
+    results: ['', 0], meta: {kind: 'error', error: this.generationError_}
+  } : xh.evaluateQuery(this.query_);
+  chrome.runtime.sendMessage({type: 'update',
     query: updateQuery ? this.query_ : null,
-    results: results
-  });
+    evaluatedQuery: this.query_,
+    results: output.results, meta: output.meta, site: xh.site(), mode: this.mode_
+  }, function() { void chrome.runtime.lastError; });
 };
 
 xh.Bar.prototype.showBar_ = function() {
+  if (!this.inDOM_) {
+    this.inDOM_ = true;
+    (document.body || document.documentElement).appendChild(this.barFrame_);
+  }
   var that = this;
-  function impl() {
+  window.setTimeout(function() {
     that.barFrame_.classList.remove('hidden');
     document.addEventListener('mousemove', that.boundMouseMove_);
     that.updateBar_(true);
-  }
-  if (!this.inDOM_) {
-    this.inDOM_ = true;
-    document.body.appendChild(this.barFrame_);
-  }
-  window.setTimeout(impl, 0);
+  }, 0);
 };
 
 xh.Bar.prototype.hideBar_ = function() {
-  var that = this;
-  function impl() {
-    that.barFrame_.classList.add('hidden');
-    document.removeEventListener('mousemove', that.boundMouseMove_);
-    xh.clearHighlights();
-  }
-  window.setTimeout(impl, 0);
+  this.barFrame_.classList.add('hidden');
+  document.removeEventListener('mousemove', this.boundMouseMove_);
+  xh.clearHighlights();
 };
 
 xh.Bar.prototype.toggleBar_ = function() {
-  if (this.hidden_()) {
-    this.showBar_();
-  } else {
-    this.hideBar_();
-  }
+  if (this.hidden_()) this.showBar_();
+  else this.hideBar_();
 };
 
-xh.Bar.prototype.handleRequest_ = function(request, sender, cb) {
-  if (request.type === 'ready') {
+xh.Bar.prototype.handleRequest_ = function(request, sender, reply) {
+  if (!request || !sender || sender.id !== chrome.runtime.id) return;
+  if (request.type === 'context') {
+    reply({site: xh.site()});
+  } else if (request.type === 'ready') {
     this.updateBar_(true);
   } else if (request.type === 'evaluate') {
-    xh.clearHighlights();
+    if (typeof request.query !== 'string' || request.query.length > 4096) return;
     this.query_ = request.query;
+    this.generationError_ = '';
     this.updateBar_(false);
+  } else if (request.type === 'mode') {
+    if (request.mode !== 'smart' && request.mode !== 'absolute') return;
+    this.mode_ = request.mode;
+    if (this.currEl_ && this.currEl_.isConnected) this.updateQueryAndBar_(this.currEl_);
+    else this.updateBar_(false);
   } else if (request.type === 'moveBar') {
-    // Move iframe to a different part of the screen.
     this.barFrame_.classList.toggle('bottom');
   } else if (request.type === 'hideBar') {
     this.hideBar_();
@@ -240,34 +170,23 @@ xh.Bar.prototype.handleRequest_ = function(request, sender, cb) {
   }
 };
 
-xh.Bar.prototype.mouseMove_ = function(e) {
-  if (this.currEl_ === e.toElement) {
-    return;
-  }
-  this.currEl_ = e.toElement;
-  if (e.shiftKey) {
-    this.updateQueryAndBar_(this.currEl_);
-  }
+xh.Bar.prototype.mouseMove_ = function(event) {
+  var element = event.target;
+  if (!element || element.nodeType !== Node.ELEMENT_NODE ||
+      element === this.barFrame_ || this.currEl_ === element) return;
+  this.currEl_ = element;
+  if (event.shiftKey) this.updateQueryAndBar_(element);
 };
 
-xh.Bar.prototype.keyDown_ = function(e) {
-  var ctrlKey = e.ctrlKey || e.metaKey;
-  var shiftKey = e.shiftKey;
-  if (e.keyCode === xh.X_KEYCODE && ctrlKey && shiftKey) {
+xh.Bar.prototype.keyDown_ = function(event) {
+  var ctrl = event.ctrlKey || event.metaKey;
+  if ((event.code === 'KeyX' || event.keyCode === xh.X_KEYCODE) && ctrl && event.shiftKey) {
+    event.preventDefault();
     this.toggleBar_();
-  }
-  // If the user just pressed Shift and they're not holding Ctrl, update query.
-  // Note that we rely on the mousemove handler to have updated this.currEl_.
-  // Also, note that checking e.shiftKey wouldn't work here, since Shift is the
-  // key that triggered this event.
-  if (!this.hidden_() && !ctrlKey && e.keyCode === xh.SHIFT_KEYCODE) {
+  } else if (!this.hidden_() && !ctrl &&
+      (event.key === 'Shift' || event.keyCode === xh.SHIFT_KEYCODE)) {
     this.updateQueryAndBar_(this.currEl_);
   }
 };
 
-////////////////////////////////////////////////////////////
-// Initialization code
-
-if (location.href.indexOf('acid3.acidtests.org') === -1) {
-  window.xhBarInstance = new xh.Bar();
-}
+window.xhBarInstance = new xh.Bar();

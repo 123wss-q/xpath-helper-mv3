@@ -1,0 +1,65 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<html lang="en">
+<head><meta charset="utf-8"><title>XPath generation fixtures</title></head>
+<body>
+  <button id="simple-id" data-case="stable-id">Stable</button>
+  <button id="Bob's &quot;quoted&quot; button" data-case="quotes">Quoted</button>
+  <button data-testid="checkout" data-case="testid">Checkout</button>
+  <button id="duplicate" data-case="duplicate-first">Same</button>
+  <button id="duplicate" data-case="duplicate-second">Same</button>
+  <section id="products"><div><span data-case="ancestor">Repeated</span><span>Repeated</span></div></section>
+  <div><span>Repeated</span></div>
+  <div><i data-case="structure-first"></i><i data-case="structure-second"></i></div>
+  <button id="ember123456" data-testid="stable-action" data-case="dynamic-id">Go</button>
+  <a class="link xh-highlight" data-case="highlight-class">Link label</a>
+  <div class="group xh-highlight" data-case="class-only"></div>
+  <button data-qa="a 'quoted' &quot;action&quot;" data-case="quoted-test-attribute"></button>
+  <img id="picture" src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" data-case="image" alt="Pixel">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20">
+    <path data-case="svg-first" d="M0 0L10 10"></path>
+    <path data-case="svg-second" d="M20 0L30 10"></path>
+    <text data-case="svg-text" x="0" y="15">SVG text</text>
+  </svg>
+  <div id="shadow-host"></div>
+  <script src="../../xpath.js"></script>
+  <script>
+    'use strict';
+    window.runXPathFixture = function() {
+      const results = [];
+      for (const element of document.querySelectorAll('[data-case]')) {
+        for (const mode of ['smart', 'absolute']) {
+          const query = xhXPath.generate(element, mode);
+          const match = document.evaluate(query, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+          const expected = element.localName === 'img' ? element.getAttributeNode('src') : element;
+          if (match.snapshotLength !== 1 || match.snapshotItem(0) !== expected) {
+            throw new Error(element.dataset.case + ' / ' + mode + ': ' + query);
+          }
+          if (query.includes('xh-highlight')) throw new Error('Transient highlight class was used');
+          if (mode === 'smart' && element.dataset.case === 'dynamic-id' && query.includes('ember123456')) {
+            throw new Error('Generated ID was selected despite stable data-testid');
+          }
+          results.push({name: element.dataset.case, mode, query});
+        }
+      }
+      const host = document.getElementById('shadow-host');
+      const shadow = host.shadowRoot || host.attachShadow({mode: 'open'});
+      shadow.innerHTML = '<button>Shadow target</button>';
+      let shadowRejected = false;
+      try { xhXPath.generate(shadow.firstElementChild); } catch (_) { shadowRejected = true; }
+      if (!shadowRejected) throw new Error('Shadow DOM incorrectly treated as a document XPath');
+      let detachedRejected = false;
+      try { xhXPath.generate(document.createElement('button')); } catch (_) { detachedRejected = true; }
+      if (!detachedRejected) throw new Error('Detached element incorrectly treated as a document XPath');
+      const panel = document.createElement('iframe');
+      panel.id = 'xh-bar';
+      document.body.appendChild(panel);
+      let panelRejected = false;
+      try { xhXPath.generate(panel); } catch (_) { panelRejected = true; }
+      panel.remove();
+      if (!panelRejected) throw new Error('The extension panel was selectable');
+      return {passed: results.length, shadowRejected, detachedRejected, panelRejected, results};
+    };
+  </script>
+</body>
+</html>
