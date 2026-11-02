@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- Original geometric artwork for this adaptation. SPDX-License-Identifier: Apache-2.0 -->
+  <rect x="4" y="4" width="120" height="120" rx="26" fill="#10283f"/>
+  <path d="M42 34H27V94H42 M86 34H101V94H86" fill="none" stroke="#65dec8" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M76 35L52 93" fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,30 @@
+XPath Helper (MV3) — independent compatibility adaptation
+
+Based on XPath Helper 2.0.2 from the extension package used for this adaptation.
+Original source copyright notices are retained in the JavaScript and CSS files:
+Copyright 2011 Google Inc. All Rights Reserved.
+Original source license: Apache License, Version 2.0. See LICENSE.txt.
+
+Upstream project source:
+https://github.com/google/xpaf/tree/036b52956bc4d52dcff404478ba73fa6a2d0fe47/chrome
+Upstream AUTHORS: opensource@google.com
+Upstream CONTRIBUTORS: Adam Sadovsky (asadovsky@gmail.com)
+The source package corresponds to the upstream XPath Helper 2.0.2 files, with
+additional strict-mode directives in JavaScript and a store update URL in the manifest.
+
+Modified on 2026-11-02:
+- manifest.json: Manifest V3, service worker, action, resource declarations;
+  updated version/name and unofficial adaptation description; removed the original
+  store update URL.
+- background.js: service worker-compatible action and validated panel-command routing.
+- content.js: initialize an empty query and refresh after the panel-ready handshake.
+- bar.js: scope updates to the containing tab, signal readiness, and use input events.
+- Replaced the original icons with new geometric artwork in static/ and assets/.
+- Added public installation, attribution and release documentation, and routing checks.
+- Removed obsolete background HTML, original signature metadata and unused build,
+  font and promotional files.
+
+The new documentation, tests and geometric artwork are also provided under Apache-2.0.
+This is an independently maintained, unofficial adaptation. It is not an official
+release by Google, the original author or the Chrome Web Store, and no endorsement
+is implied.

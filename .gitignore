@@ -1,0 +1,21 @@
+# Signing keys and credentials must never be committed.
+*.pem
+*.key
+*.p12
+*.pfx
+.env
+.env.*
+credentials*
+
+# Local packaging, browser profiles and generated files.
+work/
+signing/
+browser-profile*/
+chrome-profile*/
+node_modules/
+*.crx
+*.zip
+*.log
+__pycache__/
+.DS_Store
+Thumbs.db
